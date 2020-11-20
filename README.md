@@ -26,6 +26,7 @@ Download the ``Dictionary.keypirinha-package`` file from the Releases page of th
 ## Release Notes
 v0.1.0
 - Added initial working package
+
 v0.1.1
 - Added support for multiple languages
 - Added rudimentary file handling
