@@ -10,7 +10,12 @@ In order to get definitions in another language, the plugin uses a similar synta
 All definitions provided by the dictionary will pop up, so simply select the one you need and press enter to copy it to your clipboard.
 
 ## Installation
-Seeing as this package is, as of yet, not part of Keypirinha's convenient [PackageControl](https://github.com/ueffel/Keypirinha-PackageControl) plugin, you're going to have to download the ``Dictionary.keypirinha-package`` file from the Releases page of this repository into
+
+### PackageControl
+You can either use the wonderful [PackageControl](https://github.com/ueffel/Keypirinha-PackageControl) package manager to install that was written by [ueffel](https://github.com/ueffel), or download it manually by following the instructions below.
+
+### Manual
+Download the ``Dictionary.keypirinha-package`` file from the Releases page of this repository into
 - ``Keypirinha\portable\Profile\InstalledPackages`` if you're using Portable mode, or
 - ``AppData\Roaming\Keypirinha\InstalledPackages`` if you're using Installed mode.
 
