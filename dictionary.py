@@ -1,24 +1,24 @@
 import keypirinha as kp 
 import keypirinha_util as kp_util
 import keypirinha_net as kp_net
-import json
+import json, re, urllib
 
 class dictionary(kp.Plugin):
 
-    API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/"
+    API_URL = "https://api.dictionaryapi.dev/api/v2/entries/"
     IDLE_TIME = 0.25
     DICT_ITEMCAT = kp.ItemCategory.USER_BASE + 1
     ANSWER_ITEMCAT = kp.ItemCategory.USER_BASE + 2
     COPY_ITEMCAT = kp.ItemCategory.USER_BASE + 3
+    DEFAULT_LANG = 'en'
+    INVALID_LANG = "Language code {} is invalid. Reverting to default {}."
 
     def __init__(self):
         super().__init__()
 
-    def _build_url(self, query):
-        return self.API_URL + query
-
     def _parse_response(self, response):
         results = []
+        response = response.decode(encoding="utf-8", errors="strict")
         js = json.loads(response)
         for word in js:
             for definition in word["meanings"]:
@@ -27,19 +27,48 @@ class dictionary(kp.Plugin):
                     results.append((partOfSpeech, meaning["definition"]))
         return results
 
-    def _make_request(self, url):
+    def _make_request(self, query, lang):
+        url = self.API_URL + lang + '/' + urllib.parse.quote(query)
         opener = kp_net.build_urllib_opener()
         with opener.open(url) as conn:
             return conn.read()
 
-    def _dict_search(self, query):
-        try:
-            responseList = self._parse_response(self._make_request(self._build_url(query)))
-            return responseList
-        except:
-            None
+    def _is_valid_lang_code(self, lang):
+        valid_codes = [
+            "en",
+            "hi",
+            "es",
+            "fr",
+            "ja",
+            "ru",
+            "de",
+            "it",
+            "ko",
+            "pt-br",
+            "ar",
+            "tr",
+        ]
+        return lang in valid_codes
+
+    def _dict_search(self, query, lang):
+        responseList = self._parse_response(self._make_request(query, lang))
+        return responseList
+
+    def _read_config(self):
+        settings = self.load_settings()
+
+        default_lang = settings.get_stripped(
+            "default_lang",
+            section="defaults",
+            fallback=self.DEFAULT_LANG)
+        
+        if not self._is_valid_lang_code(default_lang):
+            self.warn(short_desc=self.INVALID_LANG.format(default_lang, self.DEFAULT_LANG))
+        else:
+            self.DEFAULT_LANG = default_lang
 
     def on_start(self):
+        self._read_config()
         self.set_actions(self.COPY_ITEMCAT, [
             self.create_action(
                 name="copy",
@@ -64,18 +93,46 @@ class dictionary(kp.Plugin):
         if self.should_terminate(self.IDLE_TIME):
             return
         
-        try:
-            result = self._dict_search(user_input.lower())
-        except:
-            None
         definitions = []
+        _user_input = ""
+        lang = self.DEFAULT_LANG
+
+        if ' ' in user_input.strip():
+            m = re.match((r"^:(?P<lang>[A-Za-z]{2,4})\s+(?P<terms>[^\s0-9]+)$"), user_input.strip())
+            if m is not None:
+                _user_input = m.group("terms")
+                lang = m.group("lang")
+                if lang == 'pt':
+                    lang = 'pt-br'
+                if not self._is_valid_lang_code(lang):
+                    definitions.append(self.warn(short_desc=self.INVALID_LANG.format(lang, self.DEFAULT_LANG)))
+                    lang = self.DEFAULT_LANG
+        else:
+            _user_input = user_input.strip()
+
+        result = None
+        try:
+            result = self._dict_search(_user_input.lower(), lang)
+        except urllib.error.HTTPError as ex:
+            if len(_user_input) > 1:
+                definitions.append(self.create_error_item(
+                label=user_input,
+                short_desc="Word not found: " + _user_input,
+            ))
+        except Exception as ex:
+            definitions.append(self.create_error_item(
+                label=user_input,
+                short_desc="Error: " + str(ex),
+            ))
+            
+        
         if result:
             for x, y in result:
                 if self.should_terminate(self.IDLE_TIME):
                     return
                 definitions.append(self.create_item(               
                     category=self.ANSWER_ITEMCAT,
-                    label=str("(" + x + ") " + y),
+                    label="(" + x + ") " + y,
                     short_desc="Press Enter to copy the result",
                     target=y,
                     args_hint=kp.ItemArgsHint.FORBIDDEN,
