@@ -5,6 +5,8 @@ This plugin uses the unofficial [Google Dictionary API](https://dictionaryapi.de
 ## Usage
 To use the plugin, first enter its menu by typing ``dictionary`` into Keypirinha, then enter the word you need the definition for.
 
+In order to get definitions in another language, the plugin uses a similar syntax to the [Translate Package](http://keypirinha.com/packages/googletranslate.html), where you type ``:[language code]`` before the word which you're finding the definition for. You can also change your default language in the config file. A list of supported languages can be found on the [API website](https://dictionaryapi.dev/).
+
 All definitions provided by the dictionary will pop up, so simply select the one you need and press enter to copy it to your clipboard.
 
 ## Installation
