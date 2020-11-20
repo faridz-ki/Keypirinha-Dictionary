@@ -33,11 +33,8 @@ class dictionary(kp.Plugin):
             return conn.read()
 
     def _dict_search(self, query):
-        try:
-            responseList = self._parse_response(self._make_request(self._build_url(query)))
-            return responseList
-        except:
-            None
+        responseList = self._parse_response(self._make_request(self._build_url(query)))
+        return responseList
 
     def on_start(self):
         self.set_actions(self.COPY_ITEMCAT, [
@@ -64,11 +61,16 @@ class dictionary(kp.Plugin):
         if self.should_terminate(self.IDLE_TIME):
             return
         
+        definitions = []
+
         try:
             result = self._dict_search(user_input.lower())
-        except:
-            None
-        definitions = []
+        except Exception as ex:
+            definitions.append(self.create_error_item(
+                label=user_input,
+                short_desc="Error: " + str(ex),
+            ))
+        
         if result:
             for x, y in result:
                 if self.should_terminate(self.IDLE_TIME):
