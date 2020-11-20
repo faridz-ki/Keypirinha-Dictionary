@@ -11,6 +11,7 @@ class dictionary(kp.Plugin):
     ANSWER_ITEMCAT = kp.ItemCategory.USER_BASE + 2
     COPY_ITEMCAT = kp.ItemCategory.USER_BASE + 3
     DEFAULT_LANG = 'en'
+    INVALID_LANG = "Language code {} is invalid. Reverting to default {}."
 
     def __init__(self):
         super().__init__()
@@ -32,11 +33,42 @@ class dictionary(kp.Plugin):
         with opener.open(url) as conn:
             return conn.read()
 
+    def _is_valid_lang_code(self, lang):
+        valid_codes = [
+            "en",
+            "hi",
+            "es",
+            "fr",
+            "ja",
+            "ru",
+            "de",
+            "it",
+            "ko",
+            "pt-br",
+            "ar",
+            "tr",
+        ]
+        return lang in valid_codes
+
     def _dict_search(self, query, lang):
         responseList = self._parse_response(self._make_request(query, lang))
         return responseList
 
+    def _read_config(self):
+        settings = self.load_settings()
+
+        default_lang = settings.get_stripped(
+            "default_lang",
+            section="defaults",
+            fallback=self.DEFAULT_LANG)
+        
+        if not self._is_valid_lang_code(default_lang):
+            self.warn(short_desc=self.INVALID_LANG.format(default_lang, self.DEFAULT_LANG))
+        else:
+            self.DEFAULT_LANG = default_lang
+
     def on_start(self):
+        self._read_config()
         self.set_actions(self.COPY_ITEMCAT, [
             self.create_action(
                 name="copy",
@@ -66,10 +98,15 @@ class dictionary(kp.Plugin):
         lang = self.DEFAULT_LANG
 
         if ' ' in user_input.strip():
-            m = re.match((r"^:(?P<lang>[A-Za-z]{2})\s+(?P<terms>[^\s0-9]+)$"), user_input.strip())
+            m = re.match((r"^:(?P<lang>[A-Za-z]{2,4})\s+(?P<terms>[^\s0-9]+)$"), user_input.strip())
             if m is not None:
                 _user_input = m.group("terms")
                 lang = m.group("lang")
+                if lang == 'pt':
+                    lang = 'pt-br'
+                if not self._is_valid_lang_code(lang):
+                    definitions.append(self.warn(short_desc=self.INVALID_LANG.format(lang, self.DEFAULT_LANG)))
+                    lang = self.DEFAULT_LANG
         else:
             _user_input = user_input.strip()
 
