@@ -21,3 +21,7 @@ Seeing as this package is, as of yet, not part of Keypirinha's convenient [Packa
 ## Release Notes
 v0.1.0
 - Added initial working package
+v0.1.1
+- Added support for multiple languages
+- Added rudimentary file handling
+- Added config file for defaults
